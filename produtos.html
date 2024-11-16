@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produtos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: rgb(143, 1, 1);
+            color: white;
+        }
+        h1, h2 {
+            color: #ffcc00;
+        }
+        .category {
+            margin-top: 20px;
+            border-top: 1px solid #ffcc00;
+            padding-top: 10px;
+        }
+        input[type="text"], input[type="number"], select {
+            margin: 5px;
+            padding: 10px;
+            border: 2px solid #ffcc00;
+            border-radius: 5px;
+            background-color: white;
+            color: rgb(143, 1, 1);
+        }
+        input[type="button"] {
+            margin: 5px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffcc00;
+            color: rgb(143, 1, 1);
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        input[type="button"]:hover {
+            background-color: #e6b800;
+            transform: scale(1.05);
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            border-bottom: 1px solid rgb(0, 162, 255);
+            padding: 5px 0;
+        }
+        .icon {
+            width: 20px;
+            height: 20px;
+            margin-left: 5px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .icon:hover {
+            transform: scale(1.2);
+        }
+        .actions {
+            display: none;
+            margin-left: 10px;
+        }
+        li:hover .actions {
+            display: inline;
+        }
+        #containerEdicao {
+            display: none; 
+            position: fixed;
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            padding: 30px;
+            border: 4px solid #ffcc00;
+            border-radius: 10px;
+            background-color: rgb(143, 1, 1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            z-index: 1001;
+        }
+        #closeBtn {
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+        .titulo-item {
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Cadastro de Produtos</h1>
+    <div>
+        <label for="codigo">Código de Barras:</label>
+        <input type="text" id="codigo" placeholder="Digite o código de barras" onkeypress="verificaEnter(event)">
+        
+        <label for="categoria">Categoria:</label>
+        <select id="categoria" onchange="verificaEnter(event)">
+            <option value="">Selecione uma categoria</option>
+            <option value="Mercearia">Mercearia</option>
+            <option value="Bebidas">Bebidas</option>
+            <option value="Higiene">Higiene</option>
+            <option value="Limpeza">Limpeza</option>
+            <option value="Pizzas">Pizzas</option>
+            <option value="Lanches/Porções">Lanches/Porções</option>
+            <option value="Marmitex">Marmitex</option>
+            <option value="Hortifrut">Hortifrut</option>
+        </select>
+        
+        <label for="nome">Nome do Item:</label>
+        <input type="text" id="nome" placeholder="Digite o nome do item" onkeypress="verificaEnter(event)">
+        
+        <label for="valor">Valor:</label>
+        <input type="number" id="valor" placeholder="Valor" min="0" step="0.01" value="0" onkeypress="verificaEnter(event)">
+        
+        <input type="button" value="Adicionar" onclick="adicionarInformacao()">
+        <input type="button" value="Editar" id="editarBtn" onclick="editarInformacao()" style="display: none;">
+    </div>
+
+    <div id="dados"></div>
+
+    <div id="overlay"></div>
+    <div id="containerEdicao">
+        <img id="closeBtn" src="https://img.icons8.com/ios-filled/20/ffcc00/multiply.png" title="Fechar" onclick="fecharEdicao()">
+        <h2>Edição de Item</h2>
+        <label for="codigoEdicao">Código de Barras:</label>
+        <input type="text" id="codigoEdicao" disabled>
+        
+        <label for="categoriaEdicao">Categoria:</label>
+        <input type="text" id="categoriaEdicao" disabled>
+        
+        <label for="nomeEdicao">Nome do Item:</label>
+        <input type="text" id="nomeEdicao">
+        
+        <label for="valorEdicao">Valor:</label>
+        <input type="number" id="valorEdicao" min="0" step="0.01">
+        
+        <input type="button" value="Salvar" onclick="salvarEdicao()">
+    </div>
+
+    <script>
+        let dados = JSON.parse(localStorage.getItem('bancoDeDados')) || {};
+        let codigoParaEditar = null;
+
+        function verificaEnter(event) {
+            if (event.key === "Enter") {
+                adicionarInformacao();
+            }
+        }
+
+        function adicionarInformacao() {
+            const codigo = document.getElementById('codigo').value.trim();
+            const categoria = document.getElementById('categoria').value;
+            const nome = document.getElementById('nome').value.trim();
+            const valor = parseFloat(document.getElementById('valor').value);
+
+            if (codigo === '' || categoria === '' || nome === '' || isNaN(valor) || valor < 0) {
+                alert('Por favor, preencha todos os campos corretamente.');
+                return;
+            }
+
+            if (codigoParaEditar) {
+                if (dados[categoria] && dados[categoria][codigoParaEditar]) {
+                    dados[categoria][codigoParaEditar] = { nome, valor };
+                    codigoParaEditar = null;
+                    document.getElementById('editarBtn').style.display = 'none';
+                }
+            } else {
+                if (!dados[categoria]) {
+                    dados[categoria] = {};
+                }
+                if (dados[categoria][codigo]) {
+                    alert('Produto já adicionado');
+                } else {
+                    dados[categoria][codigo] = { nome, valor };
+                }
+            }
+
+            localStorage.setItem('bancoDeDados', JSON.stringify(dados));
+            mostrarDados();
+            limparCampos();
+            document.getElementById('codigo').focus(); // Foco no campo de código
+        }
+
+        function mostrarDados() {
+            const dadosDiv = document.getElementById('dados');
+            dadosDiv.innerHTML = '';
+
+            for (const categoria in dados) {
+                const divCategoria = document.createElement('div');
+                divCategoria.classList.add('category');
+                divCategoria.innerHTML = `<strong>${categoria}:</strong>`;
+                
+                const lista = document.createElement('ul');
+                const itensOrdenados = Object.entries(dados[categoria])
+                    .sort((a, b) => a[1].nome.localeCompare(b[1].nome));
+
+                itensOrdenados.forEach(([codigo, item]) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span class="titulo-item">Nome:</span> ${item.nome}, <span class="titulo-item">Valor:</span> R$ ${item.valor.toFixed(2)}, <span class="titulo-item">Código:</span> ${codigo}`;
+
+                    const actionsDiv = document.createElement('span');
+                    actionsDiv.classList.add('actions');
+
+                    const editarBtn = document.createElement('img');
+                    editarBtn.src = 'https://img.icons8.com/ios-filled/20/ffcc00/edit--v1.png';
+                    editarBtn.title = 'Editar';
+                    editarBtn.classList.add('icon');
+                    editarBtn.onclick = () => prepararEdicao(codigo);
+
+                    const excluirBtn = document.createElement('img');
+                    excluirBtn.src = 'https://img.icons8.com/ios-filled/20/ffcc00/trash.png';
+                    excluirBtn.title = 'Excluir';
+                    excluirBtn.classList.add('icon');
+                    excluirBtn.onclick = () => excluirItem(codigo, categoria);
+
+                    actionsDiv.appendChild(editarBtn);
+                    actionsDiv.appendChild(excluirBtn);
+                    li.appendChild(actionsDiv);
+                    lista.appendChild(li);
+                });
+
+                divCategoria.appendChild(lista);
+                dadosDiv.appendChild(divCategoria);
+            }
+        }
+
+        function prepararEdicao(codigo) {
+            for (const categoria in dados) {
+                if (dados[categoria][codigo]) {
+                    const item = dados[categoria][codigo];
+                    document.getElementById('codigoEdicao').value = codigo;
+                    document.getElementById('categoriaEdicao').value = categoria;
+                    document.getElementById('nomeEdicao').value = item.nome;
+                    document.getElementById('valorEdicao').value = item.valor;
+                    codigoParaEditar = codigo;
+                    document.getElementById('overlay').style.display = 'block';
+                    document.getElementById('containerEdicao').style.display = 'block';
+                    document.getElementById('nomeEdicao').focus(); // Foco no nome ao abrir a edição
+                    break;
+                }
+            }
+        }
+
+        function salvarEdicao() {
+            const codigo = document.getElementById('codigoEdicao').value;
+            const categoria = document.getElementById('categoriaEdicao').value;
+            const nome = document.getElementById('nomeEdicao').value.trim();
+            const valor = parseFloat(document.getElementById('valorEdicao').value);
+
+            if (nome === '' || isNaN(valor) || valor < 0) {
+                alert('Por favor, preencha todos os campos corretamente.');
+                return;
+            }
+
+            if (dados[categoria] && dados[categoria][codigo]) {
+                dados[categoria][codigo] = { nome, valor };
+                localStorage.setItem('bancoDeDados', JSON.stringify(dados));
+                mostrarDados();
+                fecharEdicao();
+                limparCampos();
+            }
+        }
+
+        function excluirItem(codigo, categoria) {
+            if (dados[categoria] && dados[categoria][codigo]) {
+                delete dados[categoria][codigo];
+                if (Object.keys(dados[categoria]).length === 0) {
+                    delete dados[categoria];
+                }
+                localStorage.setItem('bancoDeDados', JSON.stringify(dados));
+                mostrarDados();
+            }
+        }
+
+        function limparCampos() {
+            document.getElementById('codigo').value = '';
+            document.getElementById('categoria').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('valor').value = 0;
+            document.getElementById('codigo').focus(); // Foco no campo de código após limpar
+        }
+
+        function fecharEdicao() {
+            document.getElementById('containerEdicao').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+            limparCampos();
+        }
+
+        mostrarDados();
+        document.getElementById('codigo').focus(); // Foco inicial no campo de código
+    </script>
+
+</body>
+</html>

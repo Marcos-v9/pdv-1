@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema PDV</title>
+    <style type="text/css">
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body{
+            display: flex;
+            flex-wrap: wrap;
+            margin: 3px;
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: #ffcc00;
+        }
+
+        header, nav, aside, footer {
+            display: flex;
+            margin: 3px;
+            background: rgb(143, 1, 1);
+        }
+
+        header{
+            flex: 1 1 100vw;
+            height: 100px;
+            order: 0;
+            border: 2px solid #ffcc00;
+        }
+
+        nav{
+            flex: 1 1 100vw;
+            height: 70px;
+            order: 3;
+            border: 2px solid #ffcc00;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        main{
+            flex: 20 1 500px;
+            height: calc(100vh - 270px);
+            order: 2;
+            flex-wrap: wrap;
+            overflow: auto;
+            border: 2px solid #ffcc00;
+            display: flex;
+            margin: 3px;
+            background: #e2e2e2;
+        }
+
+        aside{
+            flex: 1 1 500px;
+            order: 1;
+            border: 2px solid #ffcc00;
+        }
+
+        aside .bottom-area{
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-left: 90px;
+        }
+
+        footer{
+            flex: 1 1 100vw;
+            height: 70px;
+            order: 4;
+            border: 2px solid #ffcc00;
+            display: flex;
+        }
+
+        main section {
+            width: 100%;
+            height: 5000px;
+        }
+
+        #reciboPreview {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 58mm;
+            background-color: #fff;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1001;
+            text-align: center;
+        }
+
+        /* Títulos e divisórias */
+        #reciboPreview h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #reciboPreview .divider {
+            border-top: 1px dashed #333;
+            margin: 8px 0;
+        }
+
+        /* Conteúdo do recibo */
+        #reciboContent {
+            text-align: left;
+            font-family: monospace;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        /* Botão de fechar e imprimir */
+        .button-close-print {
+            background-color: #ffcc00;
+            color: black;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Estilo de impressão */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #reciboPreview, #reciboPreview * {
+                visibility: visible;
+            }
+            #reciboPreview {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 58mm;
+                margin: 0;
+                padding: 10px;
+            }
+        }
+        h1 {
+            color: #ffcc00;
+            margin-bottom: 20px;
+        }
+        .info {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        #itensCompra {
+            border-radius: 5px;
+            background-color: #e2e2e2;
+            margin-bottom: 20px;
+            color: rgb(143, 1, 1);
+            width: 100%;
+            height: 5000px;
+        }
+        .item {
+            padding: 8px;
+            background-color: #ffcc00;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        .delete-button {
+            cursor: pointer;
+            color: #e74c3c;
+            font-weight: bold;
+            display: none;
+        }
+        .menu-button {
+            cursor: pointer;
+        }
+        .action-button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffcc00;
+            color: black;
+            cursor: pointer;
+            width: 100%;
+            max-width: 150px;
+            margin: 5px 0;
+            transition: background-color 0.3s;
+        }
+        .action-button:hover {
+            background-color: #e6b800;
+        }
+        h2 {
+            font-size: 20px;
+            margin: 10px 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 300px;
+            margin: 10px 0;
+        }
+        label {
+            margin-bottom: 5px;
+            font-size: 25px;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            border: 2px solid #ffcc00;
+            border-radius: 5px;
+            background-color: #ffffff;
+            width: 350px;
+            font-size: 20px;
+        }
+        input:focus {
+            border-color: #ffcc00;
+            outline: none;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            display: none;
+        }
+        #opcoesPagamento, .mensagem-container, #containerConsulta, #modalQuantidade {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgb(143, 1, 1);
+            border: 2px solid #ffcc00;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            text-align: center;
+            width: 600px;
+        }
+        .close-button {
+            cursor: pointer;
+            color: #ffcc00;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+        }
+        #valorRecebido {
+            margin-top: 10px;
+        }
+        .mensagem-container h4 {
+            margin: 0;
+        }
+        .pagamento-opcao {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .pagamento-opcao img {
+            margin-right: 10px;
+        }
+        #opcoesPagamento {
+            border: 2px solid #ffcc00; 
+            padding: 20px; 
+        }
+        .pagamento-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .menu {
+            display: none;
+            position: absolute;
+            background-color: #ffffff;
+            border: 1px solid #ffcc00;
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 1000;
+            right: 0;
+        }
+        .menu-option {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .menu-option img {
+            margin-right: 8px;
+        }
+
+        aside h2{
+            font-size: 30px;
+            padding-left: 60px;
+        }
+
+        aside label{
+            padding-left: 60px;
+        }
+
+        footer h3{
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            font-size: 13px;
+            margin-left: 310px;
+        }
+
+        footer h2{
+            padding-left: 50px;
+            padding-top: 10px;
+            margin-left: 140px;
+        }
+
+        header div{
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px;
+        }
+
+        header div #data{
+            padding: 5px;
+        }
+
+        header h1{
+            margin-left: 810px;
+            padding-right: 600px;
+            padding-top: 20px;
+            font-size: 50px;
+        }
+
+        aside #logo{
+            width: 350px;
+            height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sistema PDV</h1>
+        <div class="info" id="data"></div>
+        <div class="info" id="horario"></div>
+    </header>
+
+    <aside>
+        <div class="bottom-area">
+            <img src="imagem3.png" id="logo"/>
+            <div class="input-group">
+                <label for="codigo">Código de Barras:</label>
+                <input type="text" id="codigo" placeholder="Digite o código de barras">
+            </div>
+            <div class="input-group">
+                <label for="quantidade">Quantidade:</label>
+                <input type="number" id="quantidade" value="1" min="1">
+            </div>
+            <h2>Total: R$ <span id="total">0.00</span></h2>
+        </div>
+
+        <div class="overlay" id="overlay"></div>
+
+        <div id="opcoesPagamento">
+            <span class="close-button" onclick="fecharOpcoesPagamento()">✖</span>
+            <h3>Escolha a Forma de Pagamento</h3>
+            <div class="pagamento-opcao" onclick="selecionarPagamento('Dinheiro')">
+                <img src="dinheiro.png" alt="Dinheiro" width="60" />
+                <p>Dinheiro</p>
+            </div>
+            <div class="pagamento-opcao" onclick="selecionarPagamento('Pix')">
+                <img src="pix.png" alt="Pix" width="60" />
+                <p>Pix</p>
+            </div>
+            <div class="pagamento-opcao" onclick="selecionarPagamento('Cartão de Crédito')">
+                <img src="cartão-credito.jfif" alt="Cartão de Crédito" width="60" />
+                <p>Cartão de Crédito</p>
+            </div>
+            <div class="pagamento-opcao" onclick="selecionarPagamento('Cartão de Débito')">
+                <img src="cartão-debito.jfif" alt="Cartão de Débito" width="60" />
+                <p>Cartão de Débito</p>
+            </div>
+    
+            <div id="valorRecebido">
+                <label for="valor">Valor Recebido:</label>
+                <input type="number" id="valor" placeholder="R$" oninput="calcularTroco()">
+                <h4>Troco: R$ <span id="troco">0.00</span></h4>
+            </div>
+        </div>
+
+        <div class="mensagem-container" id="mensagemContainer">
+            <span class="close-button" onclick="fecharMensagem()">✖</span>
+            <h4 id="mensagemTexto"></h4>
+        </div>
+    
+        <div id="containerConsulta">
+            <span class="close-button" onclick="fecharConsulta()">✖</span>
+            <h4>Consulta de Item</h4>
+            <div class="input-group">
+                <label for="codigoConsulta">Código de Barras:</label>
+                <input type="text" id="codigoConsulta" placeholder="Digite o código de barras">
+            </div>
+            <div id="infoItem"></div>
+            <button class="action-button" onclick="consultarItem()">Consultar</button>
+        </div>
+    
+        <div id="modalQuantidade">
+            <span class="close-button" onclick="fecharModalQuantidade()">✖</span>
+            <h4>Atualizar Quantidade</h4>
+            <div class="input-group">
+                <label for="novaQuantidade">Nova Quantidade:</label>
+                <input type="number" id="novaQuantidade" min="1" required>
+            </div>
+            <button class="action-button" id="confirmarQuantidade" onclick="confirmarQuantidade()">Confirmar</button>
+        </div>
+
+        <div id="modalRecibo" class="mensagem-container" style="display:none;">
+            <span class="close-button" onclick="fecharRecibo()">✖</span>
+            <h4>Recibo</h4>
+            <pre id="reciboTexto" style="text-align:left; font-family: monospace;"></pre>
+        </div>
+    
+         <!-- Modal de pré-visualização do recibo -->
+        <div class="overlay" id="overlayRecibo"></div>
+        <div id="reciboPreview">
+            <h3>Recibo de Venda</h3>
+            <div id="reciboContent"></div>
+            <button class="button-close-print" onclick="fecharEImprimirRecibo()">Fechar e Imprimir</button>
+        </div>
+    </aside>
+
+    <main>
+        <section>
+            <div class="left-panel">
+                <div id="itensCompra"></div>
+                <h2 id="formaPagamentoInfo" style="display:none;">Forma de pagamento: 
+                    <span id="formaPagamento" class="pagamento-info">
+                        <span id="formaText"></span>
+                        <span class="delete-button" onclick="removerPagamento(event)">🗑️</span>
+                    </span>
+                </h2>
+            </div>
+        </section>
+    </main>
+
+    <nav>
+        <button class="action-button" onclick="excluirCompra()">Excluir Compra</button>
+        <button class="action-button" onclick="togglePagamento()">Fechar Venda</button>
+        <button class="action-button" onclick="adicionarItem()">Adicionar Item</button>
+    </nav>
+    
+    <footer>
+        <h2>{B} consultar itens</h2>
+        <h2>{F} finalizar venda</h2>
+        <h2>{X} exclui itens</h2>
+        <h2>{Del} exclui compra</h2>
+        <br>        
+        <h3>M.V Informatica/pdv 1.0</h3>
+    </footer>
+
+    <script>
+        let itensCompra = [];
+        let total = 0;
+        let formaPagamentoSelecionada = '';
+        let itemAtualIndex = null; // Para armazenar o índice do item a ser atualizado
+
+        function atualizarHorario() {
+            const agora = new Date();
+            document.getElementById('horario').textContent = agora.toLocaleTimeString('pt-BR');
+            document.getElementById('data').textContent = agora.toLocaleDateString('pt-BR');
+        }
+        setInterval(atualizarHorario, 1000);
+
+        document.getElementById('codigo').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                adicionarItem();
+            }
+        });
+
+        function adicionarItem() {
+            const codigo = document.getElementById('codigo').value.trim();
+            const quantidade = parseInt(document.getElementById('quantidade').value);
+            const item = buscarProduto(codigo);
+            
+            if (item) {
+                const itemCompra = { codigo, nome: item.nome, valor: item.valor, quantidade };
+                const existingItemIndex = itensCompra.findIndex(i => i.codigo === codigo);
+
+                if (existingItemIndex > -1) {
+                    itensCompra[existingItemIndex].quantidade += quantidade;
+                } else {
+                    itensCompra.push(itemCompra);
+                }
+
+                total += item.valor * quantidade;
+                mostrarItensCompra();
+                resetarCampos();
+            } else {
+                mostrarMensagem('Item não encontrado.');
+            }
+        }
+
+        function buscarProduto(codigo) {
+            const dados = JSON.parse(localStorage.getItem('bancoDeDados')) || {};
+            for (const categoria in dados) {
+                if (dados[categoria][codigo]) {
+                    return { nome: dados[categoria][codigo].nome, valor: dados[categoria][codigo].valor };
+                }
+            }
+            return null;
+        }
+
+        function resetarCampos() {
+            document.getElementById('codigo').value = '';
+            document.getElementById('quantidade').value = 1;
+            document.getElementById('codigo').focus();
+        }
+
+        function mostrarItensCompra() {
+            const lista = document.getElementById('itensCompra');
+            lista.innerHTML = '';
+
+            itensCompra.forEach((item, index) => {
+                const divItem = document.createElement('div');
+                divItem.className = 'item';
+                divItem.innerHTML = `
+                    <strong>${item.nome}</strong> - R$ ${item.valor.toFixed(2)} 
+                    <span class="menu-button" onclick="toggleMenu(event)">⋮</span>
+                    <div class="menu">
+                        <div class="menu-option" onclick="abrirModalQuantidade(${index})">
+                            <img src="plus.png" alt="Quantidade" width="20" />
+                            Quantidade
+                        </div>
+                        <div class="menu-option" onclick="excluirItem(${index})">
+                            <img src="trash.png" alt="Excluir" width="20" />
+                            Excluir
+                        </div>
+                    </div>
+                `;
+                lista.appendChild(divItem);
+            });
+
+            document.getElementById('total').textContent = total.toFixed(2);
+            const formaPagamentoSpan = document.getElementById('formaPagamento');
+            formaPagamentoSpan.textContent = formaPagamentoSelecionada || '';
+            document.getElementById('formaPagamentoInfo').style.display = formaPagamentoSelecionada ? 'block' : 'none';
+            calcularTroco();
+        }
+
+        function toggleMenu(event) {
+            const menu = event.target.nextElementSibling;
+            const allMenus = document.querySelectorAll('.menu');
+            allMenus.forEach(m => {
+                if (m !== menu) {
+                    m.style.display = 'none';
+                }
+            });
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+            event.stopPropagation();
+        }
+
+        function abrirModalQuantidade(index) {
+            itemAtualIndex = index; // Armazena o índice do item atual
+            document.getElementById('modalQuantidade').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function confirmarQuantidade() {
+            const novaQuantidade = parseInt(document.getElementById('novaQuantidade').value);
+            if (novaQuantidade < 1) {
+                mostrarMensagem('A quantidade deve ser pelo menos 1.');
+                return;
+            }
+
+            const item = itensCompra[itemAtualIndex];
+            total -= item.valor * item.quantidade;
+            item.quantidade = novaQuantidade;
+            total += item.valor * item.quantidade;
+            mostrarItensCompra();
+            fecharModalQuantidade();
+        }
+
+        function fecharModalQuantidade() {
+            document.getElementById('modalQuantidade').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function excluirItem(index) {
+            total -= itensCompra[index].valor * itensCompra[index].quantidade;
+            itensCompra.splice(index, 1);
+            mostrarItensCompra();
+        }
+
+        function excluirCompra() {
+            itensCompra = [];
+            total = 0;
+            formaPagamentoSelecionada = '';
+            mostrarItensCompra();
+        }
+
+        function selecionarPagamento(forma) {
+            formaPagamentoSelecionada = forma;
+            mostrarItensCompra();
+            esconderOpcoesPagamento();
+            calcularTroco();
+            finalizarVenda();
+        }
+
+        function finalizarVenda() {
+            if (itensCompra.length > 0) {
+                const venda = {
+                    itens: itensCompra,
+                    total: total,
+                    formaPagamento: formaPagamentoSelecionada,
+                    data: new Date().toLocaleString('pt-BR')
+                };
+
+                let vendas = JSON.parse(localStorage.getItem('vendas')) || [];
+                vendas.push(venda);
+                localStorage.setItem('vendas', JSON.stringify(vendas));
+
+                // Exibir recibo de pré-visualização
+                mostrarRecibo(venda);
+
+                excluirCompra();
+            }
+        }
+
+        function mostrarRecibo(venda) {
+            const reciboContent = document.getElementById('reciboContent');
+            reciboContent.innerHTML = `
+                <div>Data: ${venda.data}</div>
+                <div>--------------------------------</div>
+                ${venda.itens.map(item => `
+                    <div>${item.nome} (x${item.quantidade}) - R$ ${(item.valor * item.quantidade).toFixed(2)}</div>
+                `).join('')}
+                <div>--------------------------------</div>
+                <div>Total: R$ ${venda.total.toFixed(2)}</div>
+                <div>Pagamento: ${venda.formaPagamento}</div>
+            `;
+
+            document.getElementById('reciboPreview').style.display = 'block';
+            document.getElementById('overlayRecibo').style.display = 'block';
+        }
+
+        function fecharEImprimirRecibo() {
+            const reciboPreview = document.getElementById('reciboPreview');
+            reciboPreview.style.display = 'none';
+            document.getElementById('overlayRecibo').style.display = 'none';
+            window.print();
+        }
+
+        function excluirCompra() {
+            itensCompra = [];
+            total = 0;
+            formaPagamentoSelecionada = '';
+            document.getElementById('total').textContent = '0.00';
+            mostrarItensCompra();
+        }
+
+        function removerPagamento(event) {
+            event.stopPropagation();
+            formaPagamentoSelecionada = '';
+            mostrarItensCompra();
+        }
+
+        function calcularTroco() {
+            const valorRecebido = parseFloat(document.getElementById('valor').value) || 0;
+            const troco = valorRecebido - total;
+            document.getElementById('troco').textContent = troco.toFixed(2);
+        }
+
+        function esconderOpcoesPagamento() {
+            document.getElementById('opcoesPagamento').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function mostrarMensagem(texto) {
+            document.getElementById('mensagemTexto').textContent = texto;
+            document.getElementById('mensagemContainer').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function fecharMensagem() {
+            document.getElementById('mensagemContainer').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function togglePagamento() {
+            const opcoesPagamento = document.getElementById('opcoesPagamento');
+            opcoesPagamento.style.display = opcoesPagamento.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('overlay').style.display = opcoesPagamento.style.display === 'block' ? 'block' : 'none';
+        }
+
+        function consultarItem() {
+            const codigo = document.getElementById('codigoConsulta').value.trim();
+            const dados = JSON.parse(localStorage.getItem('bancoDeDados')) || {};
+            let itemEncontrado = null;
+
+            for (const categoria in dados) {
+                if (dados[categoria][codigo]) {
+                    itemEncontrado = { nome: dados[categoria][codigo].nome, valor: dados[categoria][codigo].valor };
+                    break;
+                }
+            }
+
+            const infoItem = document.getElementById('infoItem');
+            if (itemEncontrado) {
+                infoItem.innerHTML = `
+                    <strong>Nome:</strong> ${itemEncontrado.nome}<br>
+                    <strong>Valor:</strong> R$ ${itemEncontrado.valor.toFixed(2)}
+                `;
+                document.getElementById('containerConsulta').style.display = 'block';
+            } else {
+                infoItem.innerHTML = `<strong>Item não encontrado.</strong>`;
+                document.getElementById('containerConsulta').style.display = 'block';
+            }
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function fecharConsulta() {
+            document.getElementById('containerConsulta').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function abrirConsulta() {
+            const codigoConsulta = document.getElementById('codigo').value.trim();
+            document.getElementById('codigoConsulta').value = codigoConsulta;
+            consultarItem();
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'f') {
+                if (itensCompra.length > 0) {
+                    togglePagamento();
+                } else {
+                    mostrarMensagem('Adicione pelo menos um item à compra antes de fechar a venda.');
+                }
+            }
+            if (event.key === 'b') {
+                abrirConsulta();
+            }
+        });
+
+        document.addEventListener('click', function(event) {
+            const allMenus = document.querySelectorAll('.menu');
+            allMenus.forEach(menu => {
+                menu.style.display = 'none';
+            });
+        });
+
+        window.onload = function() {
+            document.getElementById('codigo').focus();
+        };
+    </script>
+
+</body>
+</html>
