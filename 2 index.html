@@ -673,12 +673,20 @@
             document.getElementById('overlayRecibo').style.display = 'block';
         }
 
-        function fecharEImprimirRecibo() {
-            const reciboPreview = document.getElementById('reciboPreview');
-            reciboPreview.style.display = 'none';
-            document.getElementById('overlayRecibo').style.display = 'none';
-            window.print();
-        }
+    function fecharEImprimirRecibo() {
+      const reciboPreview = document.getElementById('reciboPreview');
+      reciboPreview.style.display = 'block';
+      document.getElementById('overlayRecibo').style.display = 'block';
+      setTimeout(() => {
+        window.print();
+        // Ajuste para escala de impressão
+        document.body.style.zoom = '100%';
+        reciboPreview.style.display = 'none';
+        document.getElementById('overlayRecibo').style.display = 'none';
+        // Redefinir escala após impressão
+        document.body.style.zoom = '1';
+      }, 1000); 
+    }
 
         function excluirCompra() {
             itensCompra = [];
